@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Latin Vocabulary Drill</title>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #1a1209;
+    --parchment: #f5edda;
+    --aged: #e8d9b8;
+    --rust: #8b3a1e;
+    --gold: #c49a2a;
+    --faded: #7a6a4f;
+    --correct: #2d6a3f;
+    --wrong: #7a1c1c;
+  }
+
+  body {
+    background: var(--parchment);
+    color: var(--ink);
+    font-family: 'Courier Prime', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(0,0,0,0.04) 27px, rgba(0,0,0,0.04) 28px),
+      radial-gradient(ellipse at 20% 10%, rgba(180,140,80,0.15) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 90%, rgba(139,58,30,0.08) 0%, transparent 50%);
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  h1 {
+    font-family: 'IM Fell English', serif;
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    color: var(--rust);
+    letter-spacing: 0.03em;
+    line-height: 1.1;
+  }
+
+  h1 span {
+    font-style: italic;
+    color: var(--faded);
+    font-size: 0.6em;
+    display: block;
+    margin-top: 2px;
+  }
+
+  /* Progress */
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 560px;
+    margin-bottom: 16px;
+  }
+
+  .progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--aged);
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid rgba(0,0,0,0.1);
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--rust));
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+
+  .progress-text {
+    font-size: 0.75rem;
+    color: var(--faded);
+    white-space: nowrap;
+  }
+
+  .score-badge {
+    font-size: 0.75rem;
+    color: var(--faded);
+    white-space: nowrap;
+  }
+
+  /* Card */
+  .card-area {
+    perspective: 1000px;
+    width: 100%;
+    max-width: 560px;
+    margin-bottom: 20px;
+  }
+
+  .card {
+    position: relative;
+    width: 100%;
+    min-height: 200px;
+    cursor: pointer;
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    width: 100%;
+    min-height: 200px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border: 2px solid var(--gold);
+    border-radius: 4px;
+    padding: 28px 28px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, #fdf6e3 0%, #f0e6c8 100%);
+    box-shadow: 3px 3px 0 var(--gold), 6px 6px 0 rgba(0,0,0,0.08);
+  }
+
+  .card-face::before {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border: 1px solid rgba(196,154,42,0.3);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+
+  .card-back {
+    transform: rotateY(180deg);
+  }
+
+  .card-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 12px;
+    font-weight: 700;
+  }
+
+  .card-word {
+    font-family: 'IM Fell English', serif;
+    font-size: clamp(1.5rem, 5vw, 2.2rem);
+    text-align: center;
+    color: var(--ink);
+    line-height: 1.3;
+    margin-bottom: 8px;
+  }
+
+  .card-meta {
+    font-size: 0.78rem;
+    color: var(--faded);
+    text-align: center;
+    font-style: italic;
+    line-height: 1.5;
+    margin-top: 6px;
+  }
+
+  .card-number {
+    font-size: 0.6rem;
+    color: rgba(0,0,0,0.2);
+    position: absolute;
+    bottom: 8px;
+    right: 12px;
+  }
+
+  .flip-hint {
+    font-size: 0.65rem;
+    color: var(--faded);
+    margin-top: 14px;
+    letter-spacing: 0.08em;
+    opacity: 0.7;
+  }
+
+  /* Buttons */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    max-width: 560px;
+    margin-bottom: 16px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 10px 12px;
+    border: 2px solid;
+    border-radius: 3px;
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.15s;
+    background: transparent;
+  }
+
+  .btn-correct {
+    border-color: var(--correct);
+    color: var(--correct);
+  }
+  .btn-correct:hover { background: var(--correct); color: white; }
+
+  .btn-wrong {
+    border-color: var(--wrong);
+    color: var(--wrong);
+  }
+  .btn-wrong:hover { background: var(--wrong); color: white; }
+
+  .btn-skip {
+    border-color: var(--faded);
+    color: var(--faded);
+    flex: 0.5;
+  }
+  .btn-skip:hover { background: var(--faded); color: white; }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    max-width: 560px;
+    margin-bottom: 20px;
+  }
+
+  .ctrl-btn {
+    flex: 1;
+    padding: 7px;
+    border: 1px solid var(--aged);
+    border-radius: 3px;
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.72rem;
+    color: var(--faded);
+    cursor: pointer;
+    background: transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    transition: all 0.15s;
+  }
+
+  .ctrl-btn:hover { border-color: var(--faded); color: var(--ink); }
+  .ctrl-btn.active { background: var(--ink); color: var(--parchment); border-color: var(--ink); }
+
+  /* Mode tabs */
+  .mode-tabs {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+    max-width: 560px;
+    margin-bottom: 20px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 6px 4px;
+    border: 1px solid var(--aged);
+    border-radius: 3px;
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.68rem;
+    color: var(--faded);
+    cursor: pointer;
+    background: transparent;
+    text-align: center;
+    letter-spacing: 0.05em;
+    transition: all 0.15s;
+  }
+  .tab.active { background: var(--rust); color: white; border-color: var(--rust); }
+
+  /* Starred list */
+  .starred-section {
+    width: 100%;
+    max-width: 560px;
+    margin-top: 8px;
+  }
+
+  .starred-section h3 {
+    font-family: 'IM Fell English', serif;
+    font-size: 0.9rem;
+    color: var(--rust);
+    margin-bottom: 8px;
+    font-style: italic;
+  }
+
+  .starred-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .star-chip {
+    font-size: 0.68rem;
+    padding: 3px 8px;
+    border: 1px solid var(--gold);
+    border-radius: 20px;
+    color: var(--faded);
+    background: rgba(196,154,42,0.08);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .star-chip:hover { background: var(--gold); color: white; }
+
+  /* Feedback flash */
+  .feedback {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-60px);
+    padding: 8px 20px;
+    border-radius: 3px;
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: transform 0.3s ease;
+    z-index: 100;
+    pointer-events: none;
+  }
+  .feedback.show { transform: translateX(-50%) translateY(0); }
+  .feedback.correct { background: var(--correct); color: white; }
+  .feedback.wrong { background: var(--wrong); color: white; }
+
+  /* Done screen */
+  .done-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+    width: 100%;
+    max-width: 560px;
+    padding: 40px 28px;
+    border: 2px solid var(--gold);
+    border-radius: 4px;
+    background: linear-gradient(160deg, #fdf6e3, #f0e6c8);
+    box-shadow: 3px 3px 0 var(--gold);
+  }
+
+  .done-screen h2 {
+    font-family: 'IM Fell English', serif;
+    font-size: 2rem;
+    color: var(--rust);
+  }
+
+  .done-screen .final-score {
+    font-size: 2.5rem;
+    font-family: 'IM Fell English', serif;
+    color: var(--gold);
+  }
+
+  .done-screen p { color: var(--faded); font-size: 0.85rem; }
+
+  .restart-btn {
+    padding: 10px 28px;
+    background: var(--rust);
+    color: white;
+    border: none;
+    border-radius: 3px;
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .restart-btn:hover { opacity: 0.85; }
+
+  .star-btn {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    opacity: 0.4;
+    transition: opacity 0.15s, transform 0.15s;
+  }
+  .star-btn:hover, .star-btn.starred { opacity: 1; }
+  .star-btn.starred { transform: scale(1.2); }
+</style>
+</head>
+<body>
+
+<div class="feedback" id="feedback"></div>
+
+<header>
+  <h1>Vocabula Latina <span>vocabulary drill · 26 words</span></h1>
+</header>
+
+<div class="mode-tabs" id="modeTabs">
+  <button class="tab active" onclick="setMode('lat-eng')">Latin → English</button>
+  <button class="tab" onclick="setMode('eng-lat')">English → Latin</button>
+  <button class="tab" onclick="setMode('both')">Both</button>
+  <button class="tab" onclick="setMode('mc')">Multiple Choice</button>
+</div>
+
+<div class="progress-row">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <span class="progress-text" id="progressText">0 / 26</span>
+  <span class="score-badge" id="scoreBadge">✓ 0 &nbsp; ✗ 0</span>
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn" onclick="shuffle()">⟳ Shuffle</button>
+  <button class="ctrl-btn" id="starFilterBtn" onclick="toggleStarFilter()">★ Starred Only</button>
+  <button class="ctrl-btn" onclick="resetDeck()">↺ Restart</button>
+</div>
+
+<!-- Flashcard -->
+<div id="cardArea" class="card-area" onclick="flipCard()">
+  <div class="card" id="card">
+    <div class="card-face card-front" id="cardFront">
+      <button class="star-btn" id="starBtn" onclick="event.stopPropagation(); toggleStar()">★</button>
+      <div class="card-label" id="frontLabel">Latin</div>
+      <div class="card-word" id="frontWord"></div>
+      <div class="card-meta" id="frontMeta"></div>
+      <div class="flip-hint">click to reveal</div>
+      <div class="card-number" id="cardNum"></div>
+    </div>
+    <div class="card-face card-back" id="cardBack">
+      <div class="card-label" id="backLabel">English</div>
+      <div class="card-word" id="backWord"></div>
+      <div class="card-meta" id="backMeta"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MC Options (hidden in flashcard mode) -->
+<div id="mcArea" style="display:none; width:100%; max-width:560px; margin-bottom:20px;">
+  <div id="mcOptions" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;"></div>
+</div>
+
+<!-- Action buttons (hidden in MC mode) -->
+<div class="btn-row" id="btnRow" style="display:none;">
+  <button class="btn btn-wrong" onclick="mark(false)">✗ Wrong</button>
+  <button class="btn btn-skip" onclick="nextCard()">→ Skip</button>
+  <button class="btn btn-correct" onclick="mark(true)">✓ Got it</button>
+</div>
+
+<div id="doneScreen" class="done-screen">
+  <h2>Optime!</h2>
+  <div class="final-score" id="finalScore"></div>
+  <p id="finalMsg"></p>
+  <button class="restart-btn" onclick="resetDeck()">Study Again</button>
+  <button class="restart-btn" style="background:var(--faded);" onclick="studyWrong()">Drill Missed Words</button>
+</div>
+
+<div class="starred-section" id="starredSection" style="display:none;">
+  <h3>★ Starred for review</h3>
+  <div class="starred-list" id="starredList"></div>
+</div>
+
+<script>
+const ALL_WORDS = [
+  {latin:"rēx, rēgis", pos:"m.", english:"king", forms:"noun"},
+  {latin:"mors, mortis", pos:"f.", english:"death", forms:"noun"},
+  {latin:"parātus, parāta, parātum", pos:"adj.", english:"prepared", forms:"adjective"},
+  {latin:"trahō, trahere, trāxī, tractus", pos:"verb", english:"to drag", forms:"verb"},
+  {latin:"lītus, lītoris", pos:"n.", english:"shore", forms:"noun"},
+  {latin:"saxum, saxī", pos:"n.", english:"rock", forms:"noun"},
+  {latin:"coepiō, coepere, coepī, coeptus", pos:"verb", english:"to begin", forms:"verb"},
+  {latin:"glōria, glōriae", pos:"f.", english:"glory", forms:"noun"},
+  {latin:"hūc", pos:"adv.", english:"here, to this place", forms:"adverb"},
+  {latin:"mora, morae", pos:"f.", english:"delay", forms:"noun"},
+  {latin:"cīvis, cīvis", pos:"m.", english:"citizen", forms:"noun"},
+  {latin:"currus, currūs", pos:"m.", english:"chariot", forms:"noun"},
+  {latin:"auxilium, auxiliī", pos:"n.", english:"help", forms:"noun"},
+  {latin:"dēserō, dēserere, dēseruī, dēsertus", pos:"verb", english:"to leave, to abandon", forms:"verb"},
+  {latin:"pateō, patēre, patuī", pos:"verb", english:"to stand open, to be accessible", forms:"verb"},
+  {latin:"regō, regere, rēxī, rēctus", pos:"verb", english:"to rule", forms:"verb"},
+  {latin:"ōlim", pos:"adv.", english:"once, once upon a time", forms:"adverb"},
+  {latin:"forte", pos:"adv.", english:"by chance", forms:"adverb"},
+  {latin:"brevī", pos:"adv.", english:"in a short time", forms:"adverb"},
+  {latin:"moenia, moenium", pos:"n.", english:"city walls", forms:"noun"},
+  {latin:"ibi", pos:"adv.", english:"there", forms:"adverb"},
+  {latin:"cōnstituō, cōnstituere, cōnstituī, cōnstitūtus", pos:"verb", english:"to set up, to establish, to decide", forms:"verb"},
+  {latin:"interficiō, interficere, interfēcī, interfectus", pos:"verb", english:"to kill", forms:"verb"},
+  {latin:"occīdō, occīdere, occīdī, occīsus", pos:"verb", english:"to kill", forms:"verb"},
+  {latin:"dēscendō, dēscendere, dēscendī, dēscēnsus", pos:"verb", english:"to descend", forms:"verb"},
+  {latin:"illūc", pos:"adv.", english:"there, to that place", forms:"adverb"},
+  {latin:"fābula, fābulae", pos:"f.", english:"story", forms:"noun"},
+];
+
+let deck = [], idx = 0, correct = 0, wrong = 0;
+let flipped = false, mode = 'lat-eng', starFilterOn = false;
+let starred = new Set(), missedWords = [];
+let waitingForMC = false;
+
+function shuffle(arr) {
+  if (!arr) { deck = [...getDeck()]; shuffleArr(deck); idx=0; correct=0; wrong=0; missedWords=[]; render(); return; }
+  return arr;
+}
+function shuffleArr(a) { for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} }
+
+function getDeck() {
+  return starFilterOn ? ALL_WORDS.filter(w => starred.has(w.latin)) : ALL_WORDS;
+}
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    t.classList.toggle('active', ['lat-eng','eng-lat','both','mc'][i]===m);
+  });
+  deck = [...getDeck()]; shuffleArr(deck); idx=0; correct=0; wrong=0; missedWords=[];
+  render();
+}
+
+function getCard() { return deck[idx]; }
+
+function render() {
+  const doneEl = document.getElementById('doneScreen');
+  const cardArea = document.getElementById('cardArea');
+  const mcArea = document.getElementById('mcArea');
+  const btnRow = document.getElementById('btnRow');
+
+  if (idx >= deck.length) {
+    doneEl.style.display = 'flex'; cardArea.style.display='none';
+    mcArea.style.display='none'; btnRow.style.display='none';
+    document.getElementById('finalScore').textContent = correct + ' / ' + deck.length;
+    const pct = Math.round(correct/deck.length*100);
+    document.getElementById('finalMsg').textContent =
+      pct===100 ? 'Perfect score! Truly excellent.' :
+      pct>=80 ? 'Well done! A few more to master.' :
+      pct>=60 ? 'Good progress. Keep drilling.' : 'Keep going — repetition is the key.';
+    return;
+  }
+
+  doneEl.style.display = 'none';
+  const w = getCard();
+  const card = document.getElementById('card');
+  card.classList.remove('flipped'); flipped = false;
+
+  // progress
+  const total = deck.length;
+  document.getElementById('progressFill').style.width = (idx/total*100)+'%';
+  document.getElementById('progressText').textContent = idx+' / '+total;
+  document.getElementById('scoreBadge').textContent = '✓ '+correct+' \u00a0 ✗ '+wrong;
+  document.getElementById('cardNum').textContent = '#'+(idx+1);
+
+  // star
+  const starBtn = document.getElementById('starBtn');
+  starBtn.classList.toggle('starred', starred.has(w.latin));
+
+  // decide front/back
+  let showLat = mode==='lat-eng' || (mode==='both' && Math.random()<0.5);
+  if (mode==='eng-lat') showLat = false;
+
+  if (mode === 'mc') {
+    cardArea.style.display = 'block'; mcArea.style.display='block'; btnRow.style.display='none';
+    document.getElementById('frontLabel').textContent = 'Latin';
+    document.getElementById('frontWord').textContent = w.latin.split(',')[0];
+    document.getElementById('frontMeta').textContent = w.pos + (w.forms==='verb' ? '' : '');
+    document.getElementById('backWord').textContent = w.english;
+    document.getElementById('backLabel').textContent = 'English';
+    document.getElementById('backMeta').textContent = '';
+    card.querySelector('.flip-hint').style.display='none';
+    renderMC(w);
+    waitingForMC = true;
+  } else {
+    cardArea.style.display='block'; mcArea.style.display='none'; btnRow.style.display='none';
+    card.querySelector('.flip-hint').style.display='';
+    waitingForMC = false;
+
+    if (showLat) {
+      document.getElementById('frontLabel').textContent = 'Latin';
+      document.getElementById('frontWord').textContent = w.latin.split(',')[0];
+      document.getElementById('frontMeta').textContent = w.pos + '\u00a0\u00a0' + w.latin.split(',').slice(1).join(',');
+      document.getElementById('backLabel').textContent = 'English';
+      document.getElementById('backWord').textContent = w.english;
+      document.getElementById('backMeta').textContent = w.pos;
+    } else {
+      document.getElementById('frontLabel').textContent = 'English';
+      document.getElementById('frontWord').textContent = w.english;
+      document.getElementById('frontMeta').textContent = w.pos;
+      document.getElementById('backLabel').textContent = 'Latin';
+      document.getElementById('backWord').textContent = w.latin;
+      document.getElementById('backMeta').textContent = '';
+    }
+  }
+}
+
+function renderMC(correct_word) {
+  const opts = [correct_word];
+  const pool = ALL_WORDS.filter(w=>w!==correct_word);
+  shuffleArr(pool);
+  opts.push(pool[0], pool[1], pool[2]);
+  shuffleArr(opts);
+  const container = document.getElementById('mcOptions');
+  container.innerHTML = '';
+  opts.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.textContent = opt.english;
+    btn.style.cssText = 'padding:12px 8px;border:2px solid var(--aged);border-radius:3px;font-family:Courier Prime,monospace;font-size:0.82rem;cursor:pointer;background:linear-gradient(160deg,#fdf6e3,#f0e6c8);color:var(--ink);transition:all 0.15s;text-align:center;';
+    btn.onmouseover = () => { if(!btn.dataset.done) btn.style.borderColor='var(--gold)'; };
+    btn.onmouseout = () => { if(!btn.dataset.done) btn.style.borderColor='var(--aged)'; };
+    btn.onclick = () => {
+      if (!waitingForMC) return;
+      waitingForMC = false;
+      const isRight = opt === correct_word;
+      container.querySelectorAll('button').forEach(b => b.dataset.done='1');
+      if (isRight) {
+        btn.style.background='var(--correct)'; btn.style.color='white'; btn.style.borderColor='var(--correct)';
+        showFeedback(true);
+        correct++;
+      } else {
+        btn.style.background='var(--wrong)'; btn.style.color='white'; btn.style.borderColor='var(--wrong)';
+        // show correct
+        container.querySelectorAll('button').forEach(b => {
+          if (b.textContent===correct_word.english) { b.style.background='var(--correct)';b.style.color='white';b.style.borderColor='var(--correct)'; }
+        });
+        showFeedback(false);
+        wrong++; missedWords.push(correct_word);
+      }
+      setTimeout(()=>{ idx++; render(); }, 900);
+    };
+    container.appendChild(btn);
+  });
+}
+
+function flipCard() {
+  if (mode==='mc') return;
+  const card = document.getElementById('card');
+  card.classList.toggle('flipped');
+  flipped = !flipped;
+  if (flipped) {
+    document.getElementById('btnRow').style.display='flex';
+  } else {
+    document.getElementById('btnRow').style.display='none';
+  }
+}
+
+function mark(isCorrect) {
+  if (isCorrect) { correct++; showFeedback(true); }
+  else { wrong++; missedWords.push(getCard()); showFeedback(false); }
+  idx++; render();
+}
+
+function nextCard() { idx++; render(); }
+
+function showFeedback(ok) {
+  const el = document.getElementById('feedback');
+  el.textContent = ok ? '✓ Correct' : '✗ Incorrect';
+  el.className = 'feedback show ' + (ok?'correct':'wrong');
+  setTimeout(()=>el.classList.remove('show'), 900);
+}
+
+function resetDeck() {
+  deck = [...getDeck()]; shuffleArr(deck); idx=0; correct=0; wrong=0; missedWords=[];
+  render();
+}
+
+function studyWrong() {
+  if (!missedWords.length) { resetDeck(); return; }
+  deck = [...missedWords]; shuffleArr(deck); idx=0; correct=0; wrong=0; missedWords=[];
+  render();
+}
+
+function toggleStar() {
+  const w = getCard();
+  if (starred.has(w.latin)) starred.delete(w.latin);
+  else starred.add(w.latin);
+  document.getElementById('starBtn').classList.toggle('starred', starred.has(w.latin));
+  updateStarredList();
+}
+
+function toggleStarFilter() {
+  starFilterOn = !starFilterOn;
+  document.getElementById('starFilterBtn').classList.toggle('active', starFilterOn);
+  resetDeck();
+}
+
+function updateStarredList() {
+  const sec = document.getElementById('starredSection');
+  const list = document.getElementById('starredList');
+  if (starred.size===0) { sec.style.display='none'; return; }
+  sec.style.display='block';
+  list.innerHTML='';
+  starred.forEach(lat => {
+    const w = ALL_WORDS.find(x=>x.latin===lat);
+    if (!w) return;
+    const chip = document.createElement('span');
+    chip.className='star-chip';
+    chip.textContent = lat.split(',')[0] + ' — ' + w.english;
+    chip.title='Click to unstar';
+    chip.onclick = () => { starred.delete(lat); updateStarredList(); };
+    list.appendChild(chip);
+  });
+}
+
+// init
+deck = [...ALL_WORDS]; shuffleArr(deck);
+render();
+</script>
+</body>
+</html>
